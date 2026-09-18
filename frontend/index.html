@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+  <title>Collaborative Editor</title>
+
+</head>
+
+<body>
+
+  <h1>Collaborative Code Editor</h1>
+
+  <textarea id="editor" rows="20" cols="80" placeholder="Start typing..."></textarea>
+
+  <script>
+
+    const socket = new WebSocket("ws://localhost:3000");
+
+    socket.onopen = () => {
+
+      console.log("Connected to server");
+
+    };
+
+    socket.onmessage = (event) => {
+
+      console.log("Server says:", event.data);
+
+    };
+
+    const editor = document.getElementById("editor");
+
+    editor.addEventListener("input", () => {
+
+      socket.send(editor.value);
+
+    });
+
+  </script>
+
+</body>
+
+</html>

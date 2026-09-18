@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Collaborative Editor</title>
+  <style>
+    body { font-family: sans-serif; background: #0d1117; color: #c9d1d9; padding: 2rem; }
+    textarea { background: #161b22; color: #c9d1d9; border: 1px solid #30363d; padding: 10px; font-family: monospace; font-size: 14px; }
+    .auth-box { max-width: 300px; margin: 100px auto; padding: 20px; background: #161b22; border: 1px solid #30363d; border-radius: 8px; }
+    .auth-box input { display: block; width: 100%; margin: 10px 0; padding: 8px; background: #0d1117; border: 1px solid #30363d; color: #fff; }
+    .btn { background: #238636; border: none; color: #fff; padding: 8px 16px; cursor: pointer; border-radius: 4px; }
+    .form-group { margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+
+  <!-- Auth Panel (Shown if not logged in) -->
+  <div id="auth-panel" class="auth-box">
+    <h3>Login or Register</h3>
+    <div class="form-group">
+      <input type="text" id="name" placeholder="Name (for Register)" />
+      <input type="email" id="email" placeholder="Email" value="yash@example.com" />
+      <input type="password" id="password" placeholder="Password" value="password123" />
+    </div>
+    <button onclick="login()" class="btn">Login</button>
+    <button onclick="register()" class="btn" style="background: #21262d; border: 1px solid #30363d">Register</button>
+  </div>
+
+  <!-- Editor Panel (Hidden initially) -->
+  <div id="editor-panel" style="display: none;">
+    <h1>Collaborative Code Editor</h1>
+    <textarea id="editor" rows="20" cols="80" placeholder="Start typing..."></textarea>
+  </div>
+
+  <script>
+    // Handle registration
+    async function register() {
+      const name = document.getElementById("name").value;
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert("Registered! You can now log in.");
+      } else {
+        alert(data.message);
+      }
+    }
+
+    // Handle login
+    async function login() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showEditor();
+      } else {
+        alert(data.message);
+      }
+    }
+
+    function showEditor() {
+      document.getElementById("auth-panel").style.display = "none";
+      document.getElementById("editor-panel").style.display = "block";
+      startEditor();
+    }
+  </script>
+
+  <!-- Collaborative Yjs Logic -->
+  <script type="module">
+    import * as Y from "https://esm.sh/yjs";
+
+    window.startEditor = function() {
+      const editor = document.getElementById("editor");
+      
+      // For testing, we use a fixed demo document ID.
+      // In a real application, this would match a document record from the database.
+      // (We will create this document record programmatically in MongoDB if it doesn't exist)
+      const documentId = "60a8c5b076ccbe44f9fc74b8"; 
+
+      const ydoc = new Y.Doc();
+      const ytext = ydoc.getText("code");
+      let socket;
+      let loading = true;
+      let reconnectTimer = null;
+
+      function connect() {
+        console.log("Connecting to server...");
+        socket = new WebSocket(`ws://localhost:3000?documentId=${documentId}`);
+        socket.binaryType = "arraybuffer";
+
+        socket.onopen = () => {
+          console.log("Connected to server");
+        };
+
+        socket.onmessage = (event) => {
+          const update = new Uint8Array(event.data);
+          Y.applyUpdate(ydoc, update, "remote");
+          editor.value = ytext.toString();
+          loading = false;
+        };
+
+        socket.onclose = () => {
+          console.log("Connection lost. Reconnecting in 2 seconds...");
+          reconnectTimer = setTimeout(connect, 2000);
+        };
+
+        socket.onerror = (error) => {
+          console.error("WebSocket error:", error);
+        };
+      }
+
+      // Yjs update listener
+      ydoc.on("update", (update, origin) => {
+        if (origin === "remote" || loading) return;
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          socket.send(update);
+        }
+      });
+
+      // User types into the text editor
+      editor.addEventListener("input", () => {
+        if (loading) return;
+        const newText = editor.value;
+        const oldText = ytext.toString();
+        if (newText === oldText) return;
+
+        ydoc.transact(() => {
+          ytext.delete(0, ytext.length);
+          ytext.insert(0, newText);
+        });
+      });
+
+      // Start the client connection
+      connect();
+    };
+  </script>
+</body>
+</html>
