@@ -1,8 +1,11 @@
 {
   "name": "collab-code-editor",
   "private": true,
-  "version": "1.0.0",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
   "scripts": {
-    "build": "npm run build --prefix frontend"
+    "build": "npm run build --workspace=frontend"
   }
 }
