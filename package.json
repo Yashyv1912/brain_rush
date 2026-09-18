@@ -1,11 +1,12 @@
 {
   "name": "collab-code-editor",
   "private": true,
+  "version": "1.0.0",
   "workspaces": [
     "frontend",
     "backend"
   ],
   "scripts": {
-    "build": "npm run build --workspace=frontend"
+    "build": "npm run build --workspace=frontend && node -e \"require('fs').cpSync('frontend/dist', 'dist', {recursive: true})\""
   }
 }
