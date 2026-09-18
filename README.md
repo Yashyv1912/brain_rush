@@ -1,5 +1,2 @@
-"# collab-code-editor" 
-"# collab-code-editor" 
-"# collab-code-editor" 
-"# collab-code-editor" 
-"# collab-code-editor" 
+" # Collab Code Editor A real-time collaborative code editor built with Node.js, Yjs (CRDT), and MongoDB." 
+
