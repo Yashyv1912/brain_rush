@@ -116,11 +116,13 @@ export default function Sidebar({
         </div>
 
         {/* Shared With Me */}
-        {sharedDocs.length > 0 && (
-          <div className="explorer-section">
-            <div className="section-title">
-              <span>SHARED WITH ME ({sharedDocs.length})</span>
-            </div>
+        <div className="explorer-section">
+          <div className="section-title">
+            <span>SHARED WITH ME ({sharedDocs.length})</span>
+          </div>
+          {sharedDocs.length === 0 ? (
+            <div className="empty-files-msg">No shared files yet.</div>
+          ) : (
             <ul className="file-list">
               {sharedDocs.map((doc) => {
                 const isActive = doc._id === activeDocId;
@@ -158,8 +160,8 @@ export default function Sidebar({
                 );
               })}
             </ul>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </aside>
   );
