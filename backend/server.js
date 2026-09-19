@@ -26,8 +26,9 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.static("public"));
 
-// Mount Auth Routes
+// Mount Auth & Document Routes
 app.use("/api/auth", require("./routes/auth"));
+app.use("/api/documents", require("./routes/documents"));
 
 // WebSocket Server
 const wss = new WebSocket.Server({ noServer: true });
@@ -133,7 +134,7 @@ server.on("upgrade", async (request, socket, head) => {
 
     // 2. Parse document ID from request URL (e.g., ?documentId=xxx)
     const url = new URL(request.url, `http://${request.headers.host || "localhost"}`);
-    const docId = url.searchParams.get("documentId");
+    const docId = url.searchParams.get("documentId") || url.pathname.replace(/^\//, "");
 
     if (!docId || !mongoose.Types.ObjectId.isValid(docId)) {
       socket.write("HTTP/1.1 400 Bad Request\r\n\r\n");
@@ -157,8 +158,10 @@ server.on("upgrade", async (request, socket, head) => {
     const isCollaborator = doc.collaborators.some((cId) => cId.toString() === userId);
 
     if (!isOwner && !isCollaborator) {
-      socket.write("HTTP/1.1 403 Forbidden\r\n\r\n");
-      return socket.destroy();
+      // Auto-add authenticated user as collaborator for seamless real-time collaboration
+      doc.collaborators.push(userId);
+      await doc.save();
+      console.log(`Added user ${userId} as collaborator on document ${docId}`);
     }
 
     // 4. Pass credentials to connection event

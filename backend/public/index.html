@@ -83,9 +83,6 @@
     window.startEditor = function() {
       const editor = document.getElementById("editor");
       
-      // For testing, we use a fixed demo document ID.
-      // In a real application, this would match a document record from the database.
-      // (We will create this document record programmatically in MongoDB if it doesn't exist)
       const documentId = "60a8c5b076ccbe44f9fc74b8"; 
 
       const ydoc = new Y.Doc();
@@ -94,20 +91,38 @@
       let loading = true;
       let reconnectTimer = null;
 
+      let isApplyingRemote = false;
+
+      // Observe Yjs text state and update textarea automatically (preserving cursor position)
+      ytext.observe(() => {
+        const currentText = ytext.toString();
+        if (editor.value !== currentText) {
+          isApplyingRemote = true;
+          const selStart = editor.selectionStart;
+          const selEnd = editor.selectionEnd;
+          editor.value = currentText;
+          try {
+            editor.setSelectionRange(selStart, selEnd);
+          } catch (e) {}
+          setTimeout(() => { isApplyingRemote = false; }, 0);
+        }
+      });
+
       function connect() {
-        console.log("Connecting to server...");
-        socket = new WebSocket(`ws://localhost:3000?documentId=${documentId}`);
+        console.log("Connecting to WebSocket server...");
+        socket = new WebSocket(`ws://${window.location.host}?documentId=${documentId}`);
         socket.binaryType = "arraybuffer";
 
         socket.onopen = () => {
-          console.log("Connected to server");
+          console.log("Connected to WebSocket server");
         };
 
         socket.onmessage = (event) => {
+          isApplyingRemote = true;
           const update = new Uint8Array(event.data);
           Y.applyUpdate(ydoc, update, "remote");
-          editor.value = ytext.toString();
           loading = false;
+          setTimeout(() => { isApplyingRemote = false; }, 0);
         };
 
         socket.onclose = () => {
@@ -120,30 +135,54 @@
         };
       }
 
-      // Yjs update listener
+      // Send local typing updates over WebSocket
       ydoc.on("update", (update, origin) => {
-        if (origin === "remote" || loading) return;
+        if (origin === "remote" || loading || isApplyingRemote) return;
         if (socket && socket.readyState === WebSocket.OPEN) {
           socket.send(update);
         }
       });
 
-      // User types into the text editor
+      // User types into textarea - minimal diffing (no full document wipes)
       editor.addEventListener("input", () => {
-        if (loading) return;
+        if (loading || isApplyingRemote) return;
         const newText = editor.value;
         const oldText = ytext.toString();
         if (newText === oldText) return;
 
+        let start = 0;
+        while (start < oldText.length && start < newText.length && oldText[start] === newText[start]) {
+          start++;
+        }
+
+        let oldEnd = oldText.length;
+        let newEnd = newText.length;
+        while (oldEnd > start && newEnd > start && oldText[oldEnd - 1] === newText[newEnd - 1]) {
+          oldEnd--;
+          newEnd--;
+        }
+
+        const deleteCount = oldEnd - start;
+        const insertText = newText.slice(start, newEnd);
+
         ydoc.transact(() => {
-          ytext.delete(0, ytext.length);
-          ytext.insert(0, newText);
-        });
+          if (deleteCount > 0) {
+            ytext.delete(start, deleteCount);
+          }
+          if (insertText.length > 0) {
+            ytext.insert(start, insertText);
+          }
+        }, "local");
       });
 
-      // Start the client connection
+      // Start client WebSocket connection
       connect();
     };
+
+    // Auto-show editor on page load if user is already authenticated
+    if (document.cookie.includes("token=")) {
+      showEditor();
+    }
   </script>
 </body>
 </html>

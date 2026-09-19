@@ -7,6 +7,11 @@ const DocumentSchema = new mongoose.Schema(
       default: "Untitled Document",
       trim: true,
     },
+    language: {
+      type: String,
+      default: "javascript",
+      trim: true,
+    },
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

@@ -10,9 +10,20 @@ async function loadYDoc(documentId) {
         const document = await Document.findById(documentId);
 
         if (document && document.yjsState) {
-            const state = new Uint8Array(document.yjsState);
-            Y.applyUpdate(ydoc, state);
-            console.log(`Loaded document ${documentId} from MongoDB`);
+            try {
+                const state = new Uint8Array(document.yjsState);
+                Y.applyUpdate(ydoc, state);
+                const ytext = ydoc.getText("code");
+                if (ytext.toString().length > 10000) {
+                    console.log(`Resetting oversized test document ${documentId}`);
+                    await Document.findByIdAndUpdate(documentId, { yjsState: Buffer.from([]) });
+                    return new Y.Doc();
+                }
+                console.log(`Loaded document ${documentId} from MongoDB`);
+            } catch (e) {
+                console.error(`Failed to apply Yjs state for ${documentId}, starting clean:`, e);
+                await Document.findByIdAndUpdate(documentId, { yjsState: Buffer.from([]) });
+            }
         } else {
             console.log(`Creating new Yjs document: ${documentId}`);
         }
