@@ -106,7 +106,7 @@ export default function App() {
       <div className="empty-editor-state" style={{ height: "100vh" }}>
         <div className="empty-content">
           <span className="spinner" style={{ width: 32, height: 32, margin: "0 auto 1rem" }}></span>
-          <p>Loading CodeCraft workspace...</p>
+          <p>Loading BrainRush workspace...</p>
         </div>
       </div>
     );

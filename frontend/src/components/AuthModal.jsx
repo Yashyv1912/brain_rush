@@ -34,8 +34,8 @@ export default function AuthModal({ onLoginSuccess }) {
       <div className="auth-card">
         <div className="auth-header">
           <div className="auth-logo">
-            <span className="logo-icon">⚡</span>
-            <h2>CodeCraft Collab</h2>
+            <span className="logo-icon">🧠</span>
+            <h2>BrainRush Collab</h2>
           </div>
           <p className="auth-subtitle">
             Real-time collaborative code editor platform

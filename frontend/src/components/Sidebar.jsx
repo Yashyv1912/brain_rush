@@ -33,8 +33,8 @@ export default function Sidebar({
       {/* Brand Header */}
       <div className="sidebar-header">
         <div className="brand">
-          <span className="brand-logo">⚡</span>
-          <span className="brand-title">CodeCraft</span>
+          <span className="brand-logo">🧠</span>
+          <span className="brand-title">BrainRush</span>
         </div>
         <button
           className="btn-icon new-file-btn"
