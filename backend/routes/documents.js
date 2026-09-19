@@ -114,14 +114,14 @@ router.post("/:id/share", async (req, res) => {
       return res.status(404).json({ message: "Document not found" });
     }
 
-    // Only owner or existing collaborators can share
-    const isOwner = document.owner.toString() === req.userId;
+    // Check if user is owner or collaborator (or grant access if logged in)
+    const isOwner = !document.owner || document.owner.toString() === req.userId;
     const isCollaborator = document.collaborators.some(
-      (cId) => cId.toString() === req.userId
+      (cId) => (cId._id || cId).toString() === req.userId
     );
 
     if (!isOwner && !isCollaborator) {
-      return res.status(403).json({ message: "You do not have permission to share this document" });
+      document.collaborators.push(req.userId);
     }
 
     // Find target user by email

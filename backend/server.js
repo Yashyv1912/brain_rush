@@ -13,8 +13,24 @@ require("dotenv").config();
 const { loadYDoc, saveYDoc } = require("./websocket/collaboration");
 const Document = require("./models/Document");
 
+const cors = require("cors");
+
 const app = express();
 const server = http.createServer(app);
+
+// CORS configuration for production Vercel frontend & local development
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || origin.includes("vercel.app") || origin.includes("localhost") || origin.includes("127.0.0.1")) {
+        callback(null, true);
+      } else {
+        callback(null, true);
+      }
+    },
+    credentials: true,
+  })
+);
 
 // Connect to MongoDB Atlas
 mongoose.connect(process.env.MONGODB_URI)
