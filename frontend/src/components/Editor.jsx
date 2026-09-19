@@ -62,25 +62,53 @@ export default function Editor({
       socket.binaryType = "arraybuffer";
       socketRef.current = socket;
 
+      const userColor = USER_COLORS[Math.abs((user?.name || "").split("").reduce((acc, c) => acc + c.charCodeAt(0), 0)) % USER_COLORS.length];
+
       socket.onopen = () => {
         if (isDestroyed) return;
         setConnectionStatus("connected");
+
+        // Send presence user info to room
+        if (user) {
+          socket.send(
+            JSON.stringify({
+              type: "presence",
+              user: {
+                id: user.id || user._id,
+                name: user.name,
+                email: user.email,
+                color: userColor,
+              },
+            })
+          );
+        }
       };
 
       socket.onmessage = (event) => {
         if (isDestroyed) return;
+        // Check if string JSON message
+        if (typeof event.data === "string") {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === "presence_list") {
+              setOnlineUsers(data.users || []);
+              return;
+            }
+          } catch (e) {}
+        }
+
         try {
           const update = new Uint8Array(event.data);
           Y.applyUpdate(ydoc, update, "remote");
         } catch (err) {
-          console.error("Error applying remote Yjs update:", err);
+          // Ignore non-binary
         }
       };
 
       socket.onclose = () => {
         if (isDestroyed) return;
         setConnectionStatus("disconnected");
-        // Reconnect after 3s
+        setOnlineUsers([]);
         setTimeout(connectWebSocket, 3000);
       };
 
@@ -113,7 +141,7 @@ export default function Editor({
       }
       ydoc.destroy();
     };
-  }, [doc?._id]);
+  }, [doc?._id, user?.id]);
 
   const handleEditorMount = (editor) => {
     editorRef.current = editor;
@@ -138,7 +166,7 @@ export default function Editor({
         ytext,
         model,
         new Set([editor]),
-        null // Awareness provider can be passed here
+        null
       );
     }
   };
@@ -168,6 +196,25 @@ export default function Editor({
         </div>
 
         <div className="topbar-actions">
+          {/* Active Online Collaborators Avatars */}
+          {onlineUsers.length > 0 && (
+            <div className="collaborator-avatars" title="Active users in this file">
+              <span className="active-user-count">{onlineUsers.length} Online:</span>
+              {onlineUsers.map((u, i) => (
+                <div
+                  key={u.id || u.email || i}
+                  className="collaborator-pill"
+                  style={{ backgroundColor: u.color || USER_COLORS[i % USER_COLORS.length] }}
+                  title={`${u.name || "Collaborator"} (${u.email}) is currently editing`}
+                >
+                  <span className="online-dot"></span>
+                  <span className="pill-initial">{u.name ? u.name[0].toUpperCase() : "U"}</span>
+                  <span className="pill-name">{u.name ? u.name.split(" ")[0] : "User"}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Language Selector */}
           <select
             className="language-select"

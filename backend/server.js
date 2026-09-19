@@ -79,7 +79,33 @@ wss.on("connection", async (socket, request) => {
   // Link docId to socket for client filtering in broadcasts
   socket.docId = documentId;
 
-  socket.on("message", (message) => {
+  socket.on("message", (message, isBinary) => {
+    // Check if JSON presence message
+    if (!isBinary) {
+      try {
+        const text = message.toString();
+        const data = JSON.parse(text);
+        if (data.type === "presence") {
+          socket.user = data.user;
+          
+          const onlineList = [];
+          wss.clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN && client.docId === documentId && client.user) {
+              onlineList.push(client.user);
+            }
+          });
+
+          const presenceMsg = JSON.stringify({ type: "presence_list", users: onlineList });
+          wss.clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN && client.docId === documentId) {
+              client.send(presenceMsg);
+            }
+          });
+          return;
+        }
+      } catch (e) {}
+    }
+
     // 1. Broadcast the binary update to all OTHER clients connected to this document
     wss.clients.forEach((client) => {
       if (
@@ -105,7 +131,22 @@ wss.on("connection", async (socket, request) => {
 
   socket.on("close", () => {
     console.log(`Client disconnected from document: ${documentId}`);
-    
+
+    // Broadcast updated presence list on disconnect
+    const onlineList = [];
+    wss.clients.forEach((client) => {
+      if (client !== socket && client.readyState === WebSocket.OPEN && client.docId === documentId && client.user) {
+        onlineList.push(client.user);
+      }
+    });
+
+    const presenceMsg = JSON.stringify({ type: "presence_list", users: onlineList });
+    wss.clients.forEach((client) => {
+      if (client !== socket && client.readyState === WebSocket.OPEN && client.docId === documentId) {
+        client.send(presenceMsg);
+      }
+    });
+
     // Clean up memory if no clients are connected to this room anymore
     let activeClients = 0;
     wss.clients.forEach((c) => {

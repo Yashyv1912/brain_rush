@@ -334,6 +334,56 @@ body {
   gap: 0.75rem;
 }
 
+/* Real-Time Collaborator Presence Badges */
+.collaborator-avatars {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-right: 0.5rem;
+}
+
+.active-user-count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.collaborator-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 12px;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s ease;
+}
+
+.collaborator-pill:hover {
+  transform: translateY(-1px);
+}
+
+.online-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  box-shadow: 0 0 4px #ffffff;
+}
+
+.pill-initial {
+  font-weight: 700;
+}
+
+.pill-name {
+  max-width: 80px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .language-select {
   background: var(--bg-card);
   color: var(--text-main);
