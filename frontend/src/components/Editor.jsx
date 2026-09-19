@@ -15,13 +15,13 @@ const LANGUAGES = [
 ];
 
 const USER_COLORS = [
-  "#3b82f6",
-  "#10b981",
-  "#f59e0b",
-  "#ef4444",
+  "#ff2a5f",
   "#8b5cf6",
+  "#06b6d4",
+  "#ffb703",
   "#ec4899",
-  "#14b8a6",
+  "#10b981",
+  "#3b82f6",
   "#f97316",
 ];
 
@@ -49,7 +49,6 @@ export default function Editor({
 
     const documentId = doc._id;
     const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    // In dev environment, target backend port 3000 if running on localhost:5173
     const host = window.location.port === "5173" ? "localhost:3000" : window.location.host;
     const wsUrl = `${wsProtocol}//${host}?documentId=${documentId}`;
 
@@ -86,7 +85,6 @@ export default function Editor({
 
       socket.onmessage = (event) => {
         if (isDestroyed) return;
-        // Check if string JSON message
         if (typeof event.data === "string") {
           try {
             const data = JSON.parse(event.data);
@@ -100,9 +98,7 @@ export default function Editor({
         try {
           const update = new Uint8Array(event.data);
           Y.applyUpdate(ydoc, update, "remote");
-        } catch (err) {
-          // Ignore non-binary
-        }
+        } catch (err) {}
       };
 
       socket.onclose = () => {
@@ -118,7 +114,6 @@ export default function Editor({
       };
     }
 
-    // Handle local updates
     const handleUpdate = (update, origin) => {
       if (origin === "remote") return;
       if (socket && socket.readyState === WebSocket.OPEN) {
@@ -143,10 +138,36 @@ export default function Editor({
     };
   }, [doc?._id, user?.id]);
 
+  const handleBeforeMount = (monaco) => {
+    monaco.editor.defineTheme("brainrush-cyber", {
+      base: "vs-dark",
+      inherit: true,
+      rules: [
+        { token: "comment", foreground: "64748b", fontStyle: "italic" },
+        { token: "keyword", foreground: "ff2a5f", fontStyle: "bold" },
+        { token: "string", foreground: "38bdf8" },
+        { token: "number", foreground: "ffb703" },
+        { token: "type", foreground: "a855f7" },
+        { token: "function", foreground: "a855f7" },
+        { token: "identifier", foreground: "f8fafc" },
+        { token: "delimiter", foreground: "94a3b8" },
+      ],
+      colors: {
+        "editor.background": "#0c0d14",
+        "editor.foreground": "#f8fafc",
+        "editorCursor.foreground": "#ff2a5f",
+        "editor.lineHighlightBackground": "#161824",
+        "editorLineNumber.foreground": "#475569",
+        "editorLineNumber.activeForeground": "#ff2a5f",
+        "editor.selectionBackground": "#ff2a5f40",
+        "editor.inactiveSelectionBackground": "#ff2a5f20",
+      },
+    });
+  };
+
   const handleEditorMount = (editor) => {
     editorRef.current = editor;
 
-    // Track Cursor Position
     editor.onDidChangeCursorPosition((e) => {
       setCursorPos({
         line: e.position.lineNumber,
@@ -243,7 +264,8 @@ export default function Editor({
         <MonacoEditor
           height="100%"
           language={doc.language || "javascript"}
-          theme="vs-dark"
+          theme="brainrush-cyber"
+          beforeMount={handleBeforeMount}
           onMount={handleEditorMount}
           options={{
             fontSize: 14,
