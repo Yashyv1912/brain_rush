@@ -112,47 +112,54 @@ export default function App() {
     );
   }
 
-  if (!user) {
-    return <AuthModal onLoginSuccess={handleLoginSuccess} />;
-  }
-
   return (
-    <div className="app-layout">
-      {/* Sidebar Explorer */}
-      <Sidebar
-        user={user}
-        documents={documents}
-        activeDocId={activeDocId}
-        onSelectDoc={(id) => setActiveDocId(id)}
-        onOpenNewModal={() => setIsNewModalOpen(true)}
-        onOpenShareModal={(doc) => setShareDocTarget(doc)}
-        onDeleteDoc={handleDeleteDocument}
-        onLogout={handleLogout}
-      />
+    <>
+      {!user ? (
+        <AuthModal onLoginSuccess={handleLoginSuccess} />
+      ) : (
+        <div className="app-layout">
+          {/* Sidebar Explorer */}
+          <Sidebar
+            user={user}
+            documents={documents}
+            activeDocId={activeDocId}
+            onSelectDoc={(id) => setActiveDocId(id)}
+            onOpenNewModal={() => setIsNewModalOpen(true)}
+            onOpenShareModal={(doc) => setShareDocTarget(doc)}
+            onDeleteDoc={handleDeleteDocument}
+            onLogout={handleLogout}
+          />
 
-      {/* Main Monaco Code Editor Area */}
-      <main className="main-content">
-        <Editor
-          doc={activeDoc}
-          user={user}
-          onLanguageChange={handleLanguageChange}
-          onOpenShareModal={(doc) => setShareDocTarget(doc)}
-        />
-      </main>
+          {/* Main Monaco Code Editor Area */}
+          <main className="main-content">
+            <Editor
+              doc={activeDoc}
+              user={user}
+              onLanguageChange={handleLanguageChange}
+              onOpenShareModal={(doc) => setShareDocTarget(doc)}
+            />
+          </main>
 
-      {/* Modals */}
-      <NewDocModal
-        isOpen={isNewModalOpen}
-        onClose={() => setIsNewModalOpen(false)}
-        onCreate={handleCreateDocument}
-      />
+          {/* Modals */}
+          <NewDocModal
+            isOpen={isNewModalOpen}
+            onClose={() => setIsNewModalOpen(false)}
+            onCreate={handleCreateDocument}
+          />
 
-      <ShareModal
-        doc={shareDocTarget}
-        isOpen={!!shareDocTarget}
-        onClose={() => setShareDocTarget(null)}
-        onShareSuccess={handleShareSuccess}
-      />
-    </div>
+          <ShareModal
+            doc={shareDocTarget}
+            isOpen={!!shareDocTarget}
+            onClose={() => setShareDocTarget(null)}
+            onShareSuccess={handleShareSuccess}
+          />
+        </div>
+      )}
+
+      {/* Persistent Creator Signature Badge */}
+      <div className="creator-badge">
+        <span>Made by Yash Vaddoriya</span>
+      </div>
+    </>
   );
 }
